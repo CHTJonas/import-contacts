@@ -3,71 +3,71 @@
 #include <string>
 #include <vector>
 
-#include "splitter.cpp"
-
 using namespace std;
 
-class ContactImporter {
+class contactImporter {
     private:
         string filepath;
         int rows;
         int columns;
         vector< vector<string> > table;
 
-        static vector<string> loadFromDisk(string filename) {
+        vector<string> loadFromDisk() {
             vector<string> CSVlines;
             string readString;
-            ifstream fileStream (filename);
+            ifstream fileStream (filepath);
             if (fileStream.is_open()) {
-                getline(fileStream, readString);
                 while (fileStream.good()) {
-                    CSVlines.push_back(readString);
                     getline(fileStream, readString);
+                    CSVlines.push_back(readString);
                 }
                 fileStream.close();
                 return CSVlines;
             }
             else {
-                cout << "Unable to open file";
+                string message = "Unable to read from file: ";
+                message.append(filepath);
+                throw badFileException(message);
             }
         }
-    
-        // private static List<String> loadFromURL(String url) throws IOException {
-        //     URL destination = new URL(url);
-        //     URLConnection conn = destination.openConnection();
-        //     return load(new InputStreamReader(conn.getInputStream()));
-        // }
 
     public:
-        ContactImporter(string path) {
+        contactImporter(string path) {
             filepath = path;
-            vector<string> lines = loadFromDisk(filepath);
+            vector<string> lines;
+            try {
+                lines = loadFromDisk();
+            }
+            catch (badFileException ex) {
+                print(ex.message());
+                exit(1);
+            }
             rows = lines.size();
+            vector<string> test = split(lines[0], ',');
             columns = split(lines[0], ',').size();
+            for (int i=0 ; i<rows ; i++) {
+                table.push_back( split(lines[i], ',') );
+            }
         }
 
-        // table = new String[rows][columns];
-        // for (int i = 0 ; i < lines.length ; i++) {
-        //     table[i] = ((String) lines[i]).split(",");
-        // }
-
         void iread() {
-            cout << I_READ_MESSAGE << "\n";
-            for (int row=0 ; row<rows ; row++) {
+            print(I_READ_MESSAGE);
+            for (int row = 0 ; row < rows ; row++) {
                 string output = "";
-                for (int column=0 ; column<columns ; column++) {
-                    string cell = table[row][column];
-                    output += cell;
-                    output += ",";
+                for (int column = 0 ; column < columns ; column++) {
+                    string cellContents = table[row][column];
+                    output.append(cellContents);
+                    if (column != columns - 1) {
+                        output.append(string(","));
+                    }
                 }
-                // TODO: remove the last trailing comma
-                cout << output;
+                print(output);
             }
         }
 
         vector<string> getColumn(int col) {
             vector<string> result(rows);
-            for (int i=0 ; i<rows ; i++) {
+            for (int i = 0 ; i < rows ; i++) {
                 result[i] = table[i][col];
             }
             return result;
@@ -77,10 +77,12 @@ class ContactImporter {
             if (omitFirst == false) {
                 return getColumn(col);
             }
-            vector<string> result(rows - 1);
-            for (int i=1 ; i<rows ; i++) {
-                result[i-1] = table[i][col];
-            }
+            // vector<string> result(rows - 1);
+            // for (int i=1 ; i<rows ; i++) {
+            //     result[i-1] = table[i][col];
+            // }
+            vector<string> result = getColumn(col);
+            result.erase(result.begin());
             return result;
         }
 };
